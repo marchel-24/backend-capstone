@@ -7,5 +7,6 @@ router.get("/", parkingController.getParkings);
 router.get("/:id", parkingController.getParking);
 router.post("/", parkingController.addParking);
 router.delete("/:id", parkingController.removeParking);
+router.patch("/:nomor", parkingController.updateParking);
 
 export default router;
