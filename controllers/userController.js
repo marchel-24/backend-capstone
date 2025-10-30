@@ -1,4 +1,5 @@
 import * as UserModel from "../models/userModel.js";
+import jwt from "jsonwebtoken";
 
 export const getUsers = async (req, res) => {
   try {
@@ -61,13 +62,34 @@ export const login = async (req, res) => {
     if (!user) {
       return res.status(401).json({ message: "Invalid user." });
     }
+
     if (password !== user.password) {
       return res.status(401).json({ message: "Invalid email or password." });
     }
 
+    // ✅ 1. Buat token JWT
+    const payload = {
+      userID: user.userid,
+      nama: user.nama,
+      roles: user.roles,
+      email: user.email
+    };
+
+    const token = jwt.sign(payload, process.env.JWT_SECRET, {
+      expiresIn: process.env.JWT_EXPIRES_IN || "7d" // bisa 1h, 7d, dsb
+    });
+
+    // ✅ 2. Kirim token + data user ke client
     res.status(200).json({
       message: "Login successful!",
-      user
+      token,   // <<=== TOKEN dikirim di sini
+      user: {
+        userid: user.userid,
+        nama: user.nama,
+        roles: user.roles,
+        license: user.license,
+        email: user.email
+      }
     });
 
   } catch (err) {
