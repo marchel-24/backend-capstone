@@ -10,9 +10,6 @@ export const getLog = async (req, res) => {
   res.json(log);
 };
 
-export const addLog = async (req, res) => {
-  res.status(201).json(await LogModel.createLog(req.body));
-};
 
 export const removeLog = async (req, res) => {
   const log = await LogModel.deleteLog(req.params.id);

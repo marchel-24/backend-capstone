@@ -12,8 +12,8 @@ export const getUserById = async (id) => {
 
 export const createUser = async ({ nama, license, email, birthdate, roles, password }) => {
   const result = await pool.query(
-    'INSERT INTO public."User"(nama, roles, license, email, birthdate, password) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-    [nama, roles, license, email, birthdate, password]
+    'INSERT INTO public."User"(nama, roles, license, email, password) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+    [nama, roles, license, email, password]
   );
   return result.rows[0];
 };

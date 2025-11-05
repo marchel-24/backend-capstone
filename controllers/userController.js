@@ -27,8 +27,8 @@ export const getUser = async (req, res) => {
 
 export const addUser = async (req, res) => {
   try {
-    const { nama, license, email, birthdate, roles, password } = req.body;
-    const user = await UserModel.createUser({ nama, license, email, birthdate, roles, password});
+    const { nama, license, email, roles, password } = req.body;
+    const user = await UserModel.createUser({ nama, license, email, roles, password });
 
     res.status(201).json(user);
   } catch (error) {
@@ -100,12 +100,12 @@ export const login = async (req, res) => {
 
 export const updatepassword = async (req, res) => {
   try {
-    const {email, password} = req.body;
+    const { email, password } = req.body;
 
     const update = await UserModel.updatepassword(email, password);
 
     res.status(200).json(update);
-  }catch (err){
+  } catch (err) {
     res.status(500).json(err);
   }
 }

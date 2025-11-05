@@ -6,8 +6,8 @@ export const getAllLogs = async () => {
 };
 
 export const getLogById = async (id) => {
-  const result = await pool.query("SELECT * FROM log_activity WHERE num_activity = $1", [id]);
-  return result.rows[0];
+  const result = await pool.query("SELECT * FROM log_activity WHERE id = $1", [id]);
+  return result.rows;
 };
 
 export const createLog = async ({ id, nomor, time, status }) => {
