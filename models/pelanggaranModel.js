@@ -6,8 +6,11 @@ export const getAllPelanggaran = async () => {
 };
 
 export const getPelanggaranById = async (id) => {
-  const result = await pool.query("SELECT * FROM pelanggaran WHERE num_pelanggaran = $1", [id]);
-  return result.rows[0];
+  const result = await pool.query(
+    "SELECT * FROM pelanggaran WHERE userid = $1 ORDER BY num_pelanggaran DESC",
+    [id]
+  );
+  return result.rows;
 };
 
 export const createPelanggaran = async ({ userid, nomor, jenis_pelanggaran }) => {

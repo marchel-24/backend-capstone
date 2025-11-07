@@ -5,9 +5,19 @@ export const getPelanggarans = async (req, res) => {
 };
 
 export const getPelanggaran = async (req, res) => {
-  const p = await PelanggaranModel.getPelanggaranById(req.params.id);
-  if (!p) return res.status(404).json({ message: "Pelanggaran tidak ditemukan" });
-  res.json(p);
+  try {
+    const { id } = req.params;
+    const result = await PelanggaranModel.getPelanggaranById(id);
+
+    if (!result || result.length === 0) {
+      return res.status(404).json({ message: "Tidak ada pelanggaran untuk user ini" });
+    }
+
+    res.status(200).json(result);
+  } catch (err) {
+    console.error("Error getByUser:", err);
+    res.status(500).json({ message: "Gagal mengambil data pelanggaran" });
+  }
 };
 
 export const addPelanggaran = async (req, res) => {

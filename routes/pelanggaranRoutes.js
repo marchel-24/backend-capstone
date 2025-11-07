@@ -8,4 +8,9 @@ router.get("/:id", pelanggaranController.getPelanggaran);
 router.post("/", pelanggaranController.addPelanggaran);
 router.delete("/:id", pelanggaranController.removePelanggaran);
 
+router.post("/detect", async (req, res) => {
+    await detectAndInsertPelanggaran();
+    res.json({ message: "Deteksi pelanggaran selesai dijalankan." });
+});
+
 export default router;
