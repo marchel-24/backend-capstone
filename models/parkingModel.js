@@ -123,3 +123,15 @@ export const updateParking = async ({ nomor, userid, status }) => {
     client.release();
   }
 };
+
+export const getParkingStats = async () => {
+  const result = await pool.query(`
+    SELECT
+      COUNT(*) AS total,
+      COUNT(*) FILTER (WHERE status = 'occupied') AS occupied,
+      COUNT(*) FILTER (WHERE status = 'available') AS available
+    FROM parking;
+  `);
+
+  return result.rows[0];
+};

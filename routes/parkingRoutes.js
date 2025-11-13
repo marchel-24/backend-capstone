@@ -3,6 +3,7 @@ import * as parkingController from "../controllers/parkingController.js";
 
 const router = express.Router();
 
+router.get("/stats", parkingController.getParkingStats);
 router.get("/", parkingController.getParkings);
 router.get("/:id", parkingController.getParking);
 router.post("/", parkingController.addParking);

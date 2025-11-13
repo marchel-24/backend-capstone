@@ -141,3 +141,13 @@ export const updateParking = async (req, res) => {
     });
   }
 };
+
+export const getParkingStats = async (req, res) => {
+  try {
+    const stats = await ParkingModel.getParkingStats();
+    res.json(stats);
+  } catch (err) {
+    console.error("Error getParkingStats:", err);
+    res.status(500).json({ message: "Gagal mengambil statistik parkir" });
+  }
+};
