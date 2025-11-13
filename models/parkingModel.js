@@ -93,7 +93,7 @@ export const updateParking = async ({ nomor, userid, status }) => {
         [
           userid,
           nomor,
-          `Slot khusus ${slot.rolesUser}, namun user (${userRow.nama}) memiliki role ${userRow.roles}`,
+          `Menggunakan slot khusus ${slot.rolesUser}`,
         ]
       );
 
