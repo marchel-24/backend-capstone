@@ -1,7 +1,13 @@
 import pkg from 'pg';
+import pg from 'pg';
 import dotenv from 'dotenv';
 
 dotenv.config();
+
+pg.types.setTypeParser(1114, (stringValue) => {
+  return stringValue; // kirim raw string, jangan convert ke Date
+});
+
 const { Pool } = pkg;
 
 const pool = new Pool({
@@ -17,6 +23,11 @@ export default pool;
 // import pg from "pg";
 // import dotenv from "dotenv";
 // dotenv.config();
+
+// // OID 1114 = timestamp without time zone
+// pg.types.setTypeParser(1114, (stringValue) => {
+//   return stringValue; // kirim raw string, jangan convert ke Date
+// });
 
 // const pool = new pg.Pool({
 //   host: process.env.PG_HOST,
