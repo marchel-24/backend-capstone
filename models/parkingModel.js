@@ -135,3 +135,160 @@ export const getParkingStats = async () => {
 
   return result.rows[0];
 };
+
+
+// export const updateParking = async ({ nomor, userid }) => {
+//   const client = await pool.connect();
+
+//   try {
+//     await client.query("BEGIN");
+//     console.log("🚗 Update slot via BLE+Sensor:", nomor, "oleh user:", userid);
+
+//     // ======================================================
+//     // 1️⃣ Panggil API SENSOR untuk cek apakah ada mobil
+//     // ======================================================
+//     const sensorUrl = process.env.URL_SENSOR; // contoh: http://localhost:8000/check
+//     const sensorResp = await fetch(sensorUrl, {
+//       method: "POST",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify({ slot_id: nomor })
+//     }).then(r => r.json()).catch(() => null);
+
+//     if (!sensorResp) throw new Error("Sensor tidak memberikan respons");
+
+//     const mobilAda = sensorResp.hasil === true;
+
+//     console.log(`📡 Sensor slot ${nomor}: mobilAda =`, mobilAda);
+
+//     // ======================================================
+//     // 2️⃣ Jika sensor bilang slot KOSONG → override jadi available
+//     // ======================================================
+//     const finalStatus = mobilAda ? "occupied" : "available";
+//     const finalUserId = mobilAda ? userid : null;
+
+//     if (!mobilAda) {
+//       console.log(`📭 Sensor mendeteksi kosong → slot ${nomor} diset available, userid=NULL`);
+//     }
+
+//     // ======================================================
+//     // 3️⃣ Ambil data user (jika userId ada)
+//     // ======================================================
+//     let userRow = null;
+//     if (finalUserId) {
+//       const userRes = await client.query(
+//         `SELECT userid, nama, roles FROM "User" WHERE userid=$1`,
+//         [finalUserId]
+//       );
+//       if (userRes.rows.length === 0) throw new Error("User tidak ditemukan");
+//       userRow = userRes.rows[0];
+//     }
+
+//     // ======================================================
+//     // 4️⃣ Ambil info slot
+//     // ======================================================
+//     const slotRes = await client.query(
+//       `SELECT nomor, lokasi, "rolesUser"
+//        FROM parking
+//        WHERE nomor = $1`,
+//       [nomor]
+//     );
+
+//     if (slotRes.rows.length === 0) throw new Error("Slot tidak ditemukan");
+
+//     const slot = slotRes.rows[0];
+
+//     // ======================================================
+//     // 5️⃣ Lepaskan slot lama user (jika userId valid)
+//     // ======================================================
+//     if (finalUserId) {
+//       const oldSlotRes = await client.query(
+//         `SELECT nomor
+//          FROM parking
+//          WHERE userid = $1 AND nomor != $2`,
+//         [finalUserId, nomor]
+//       );
+
+//       if (oldSlotRes.rows.length > 0) {
+//         const oldSlot = oldSlotRes.rows[0].nomor;
+//         console.log(`♻️ Melepaskan slot lama (${oldSlot}) milik user ${finalUserId}`);
+
+//         await client.query(
+//           `UPDATE parking
+//            SET userid = NULL, status = 'available'
+//            WHERE nomor = $1`,
+//           [oldSlot]
+//         );
+//       }
+//     }
+
+//     // ======================================================
+//     // 6️⃣ Update slot baru sesuai hasil sensor
+//     // ======================================================
+//     const result = await client.query(
+//       `UPDATE parking
+//        SET userid = $2, status = $3
+//        WHERE nomor = $1
+//        RETURNING *`,
+//       [nomor, finalUserId, finalStatus]
+//     );
+
+//     const updated = result.rows[0];
+//     console.log(`✅ Slot ${nomor} diupdate → status=${finalStatus}, user=${finalUserId}`);
+
+//     // ======================================================
+//     // 7️⃣ Deteksi pelanggaran (hanya jika mobil benar-benar ada)
+//     // ======================================================
+//     if (
+//       mobilAda &&
+//       finalUserId !== null &&
+//       slot.rolesUser &&
+//       slot.rolesUser.toLowerCase() !== userRow.roles.toLowerCase()
+//     ) {
+//       console.warn(
+//         `⚠ Pelanggaran: Slot ${slot.nomor} khusus ${slot.rolesUser}, `
+//         + `tapi ${userRow.nama} (${userRow.roles}) parkir.`
+//       );
+
+//       // Catat pelanggaran
+//       await client.query(
+//         `INSERT INTO pelanggaran (userid, nomor, jenis_pelanggaran)
+//          VALUES ($1, $2, $3)`,
+//         [
+//           finalUserId,
+//           nomor,
+//           `Menggunakan slot khusus ${slot.rolesUser}`,
+//         ]
+//       );
+
+//       // Aktifkan buzzer
+//       const buzzerUrl = process.env.URL_BUZZER;
+//       try {
+//         await fetch(buzzerUrl, {
+//           method: "POST",
+//           headers: { "Content-Type": "application/json" },
+//           body: JSON.stringify({ sensor_id: "1" }),
+//         });
+//         console.log("🔔 Buzzer ON dikirim");
+//       } catch (err) {
+//         console.error("❌ Gagal memanggil buzzer:", err.message);
+//       }
+//     }
+
+//     await client.query("COMMIT");
+
+//     return {
+//       ...updated,
+//       validatedBySensor: true,
+//       mobilAda,
+//       finalStatus,
+//       finalUserId
+//     };
+
+//   } catch (err) {
+//     await client.query("ROLLBACK");
+//     console.error("❌ Error updateParking:", err.message);
+//     throw err;
+//   } finally {
+//     client.release();
+//   }
+// };
