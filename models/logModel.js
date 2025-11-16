@@ -23,7 +23,7 @@ export const getLogById = async (id) => {
 export const createLog = async ({ id, area, status }) => {
   const result = await pool.query(
     `INSERT INTO log_activity (id, area, status, time)
-     VALUES ($1, $2, $3, NOW())
+     VALUES ($1, $2, $3, NOW() AT TIME ZONE 'Asia/Jakarta)
      RETURNING *`,
     [id, area, status]
   );
