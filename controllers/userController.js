@@ -28,13 +28,26 @@ export const getUser = async (req, res) => {
 export const addUser = async (req, res) => {
   try {
     const { nama, license, email, roles, password } = req.body;
+
+    // 🔥 Cek apakah email sudah dipakai
+    const existing = await UserModel.getUserByMail(email);
+    if (existing) {
+      return res.status(409).json({ message: "Email sudah digunakan." });
+    }
+
+    // 🔥 Lanjutkan create user
     const user = await UserModel.createUser({ nama, license, email, roles, password });
 
-    res.status(201).json(user);
+    res.status(201).json({
+      message: "User berhasil dibuat",
+      user
+    });
+
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
+
 export const removeUser = async (req, res) => {
   const userId = parseInt(req.params.id);
   try {
@@ -60,11 +73,11 @@ export const login = async (req, res) => {
     const user = await UserModel.getUserByMail(email);
 
     if (!user) {
-      return res.status(401).json({ message: "Invalid user." });
+      return res.status(401).json({ message: "Email atau password salah." });
     }
 
     if (password !== user.password) {
-      return res.status(401).json({ message: "Invalid email or password." });
+      return res.status(401).json({ message: "Email atau password salah." });
     }
 
     // ✅ 1. Buat token JWT
