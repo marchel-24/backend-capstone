@@ -15,7 +15,7 @@ export const getPelanggaranById = async (id) => {
 
 export const createPelanggaran = async ({ userid, nomor, jenis_pelanggaran }) => {
   const result = await pool.query(
-    "INSERT INTO pelanggaran (userid, nomor, jenis_pelanggaran) VALUES ($1, $2, $3) RETURNING *",
+    "INSERT INTO pelanggaran (userid, nomor, jenis_pelanggaran, time) VALUES ($1, $2, $3, NOW() AT TIME ZONE 'Asia/Jakarta') RETURNING *",
     [userid, nomor, jenis_pelanggaran]
   );
   return result.rows[0];
