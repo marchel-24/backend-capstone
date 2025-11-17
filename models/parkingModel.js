@@ -152,7 +152,7 @@ export const updateParking = async ({ nomor, userid }) => {
     const sensorText = await fetch(sensorUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ slot_id: nomor })
+      body: JSON.stringify({ "slot_id": nomor })
     })
       .then(r => r.text())
       .catch(() => null);
@@ -267,7 +267,7 @@ export const updateParking = async ({ nomor, userid }) => {
         await fetch(buzzerUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sensor_id: nomor })
+          body: JSON.stringify({ "sensor_id": nomor })
         });
 
         console.log("🔔 Buzzer ON");
