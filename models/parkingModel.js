@@ -25,104 +25,104 @@ export const deleteParking = async (nomor) => {
   return result.rows[0];
 };
 
-export const updateParking = async ({ nomor, userid, status }) => {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    console.log("🚗 Update slot:", nomor, "oleh user:", userid);
+// export const updateParking = async ({ nomor, userid, status }) => {
+//   const client = await pool.connect();
+//   try {
+//     await client.query("BEGIN");
+//     console.log("🚗 Update slot:", nomor, "oleh user:", userid);
 
-    // 🔹 1. Cek apakah user sedang menempati slot lain
-    const oldSlotRes = await client.query(
-      `SELECT nomor FROM parking WHERE userid = $1 AND nomor != $2`,
-      [userid, nomor]
-    );
+//     // 🔹 1. Cek apakah user sedang menempati slot lain
+//     const oldSlotRes = await client.query(
+//       `SELECT nomor FROM parking WHERE userid = $1 AND nomor != $2`,
+//       [userid, nomor]
+//     );
 
-    if (oldSlotRes.rows.length > 0) {
-      const oldSlot = oldSlotRes.rows[0].nomor;
-      console.log(`♻️ Melepaskan slot lama (${oldSlot}) milik user ${userid}`);
+//     if (oldSlotRes.rows.length > 0) {
+//       const oldSlot = oldSlotRes.rows[0].nomor;
+//       console.log(`♻️ Melepaskan slot lama (${oldSlot}) milik user ${userid}`);
 
-      await client.query(
-        `UPDATE parking SET userid = NULL, status = 'available' WHERE nomor = $1`,
-        [oldSlot]
-      );
-    }
+//       await client.query(
+//         `UPDATE parking SET userid = NULL, status = 'available' WHERE nomor = $1`,
+//         [oldSlot]
+//       );
+//     }
 
-    // 🔹 2. Ambil data user
-    const userRes = await client.query(
-      `SELECT userid, nama, roles FROM "User" WHERE userid=$1`,
-      [userid]
-    );
-    if (userRes.rows.length === 0) throw new Error("User tidak ditemukan");
-    const userRow = userRes.rows[0];
+//     // 🔹 2. Ambil data user
+//     const userRes = await client.query(
+//       `SELECT userid, nama, roles FROM "User" WHERE userid=$1`,
+//       [userid]
+//     );
+//     if (userRes.rows.length === 0) throw new Error("User tidak ditemukan");
+//     const userRow = userRes.rows[0];
 
-    // 🔹 3. Ambil data slot baru
-    const slotRes = await client.query(
-      `SELECT nomor, lokasi, "rolesUser" FROM parking WHERE nomor = $1`,
-      [nomor]
-    );
-    if (slotRes.rows.length === 0) throw new Error("Slot tidak ditemukan");
-    const slot = slotRes.rows[0];
+//     // 🔹 3. Ambil data slot baru
+//     const slotRes = await client.query(
+//       `SELECT nomor, lokasi, "rolesUser" FROM parking WHERE nomor = $1`,
+//       [nomor]
+//     );
+//     if (slotRes.rows.length === 0) throw new Error("Slot tidak ditemukan");
+//     const slot = slotRes.rows[0];
 
-    // 🔹 4. Update slot baru
-    const result = await client.query(
-      `UPDATE parking
-       SET userid = $2, status = $3
-       WHERE nomor = $1
-       RETURNING *`,
-      [nomor, userid, status]
-    );
+//     // 🔹 4. Update slot baru
+//     const result = await client.query(
+//       `UPDATE parking
+//        SET userid = $2, status = $3
+//        WHERE nomor = $1
+//        RETURNING *`,
+//       [nomor, userid, status]
+//     );
 
-    const updated = result.rows[0];
-    console.log(`✅ Slot ${nomor} berhasil diupdate jadi ${status}`);
+//     const updated = result.rows[0];
+//     console.log(`✅ Slot ${nomor} berhasil diupdate jadi ${status}`);
 
-    // 🔹 5. Deteksi pelanggaran
-    if (
-      slot.rolesUser &&
-      slot.rolesUser.toLowerCase() !== userRow.roles.toLowerCase() &&
-      status.toLowerCase() === "occupied"
-    ) {
-      console.warn(
-        `⚠️ Pelanggaran terdeteksi: Slot ${slot.nomor} untuk ${slot.rolesUser}, ` +
-        `tapi ${userRow.nama} (${userRow.roles}) mencoba parkir.`
-      );
+//     // 🔹 5. Deteksi pelanggaran
+//     if (
+//       slot.rolesUser &&
+//       slot.rolesUser.toLowerCase() !== userRow.roles.toLowerCase() &&
+//       status.toLowerCase() === "occupied"
+//     ) {
+//       console.warn(
+//         `⚠️ Pelanggaran terdeteksi: Slot ${slot.nomor} untuk ${slot.rolesUser}, ` +
+//         `tapi ${userRow.nama} (${userRow.roles}) mencoba parkir.`
+//       );
 
-      // Catat ke tabel pelanggaran
-      await client.query(
-        `INSERT INTO pelanggaran (userid, nomor, jenis_pelanggaran)
-         VALUES ($1, $2, $3)`,
-        [
-          userid,
-          nomor,
-          `Menggunakan slot khusus ${slot.rolesUser}`,
-        ]
-      );
+//       // Catat ke tabel pelanggaran
+//       await client.query(
+//         `INSERT INTO pelanggaran (userid, nomor, jenis_pelanggaran)
+//          VALUES ($1, $2, $3)`,
+//         [
+//           userid,
+//           nomor,
+//           `Menggunakan slot khusus ${slot.rolesUser}`,
+//         ]
+//       );
 
-      // 🔔 Aktifkan buzzer via API
-      const buzzerUrl = process.env.URL_BUZZER;
-      try {
-        await fetch(buzzerUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sensor_id: "1" }),
-        });
-        console.log("🔔 Buzzer ON dikirim");
-      } catch (err) {
-        console.error("❌ Gagal memanggil API buzzer:", err.message);
-      }
-    } else {
-      console.log("✅ Tidak ada pelanggaran terdeteksi.");
-    }
+//       // 🔔 Aktifkan buzzer via API
+//       const buzzerUrl = process.env.URL_BUZZER;
+//       try {
+//         await fetch(buzzerUrl, {
+//           method: "POST",
+//           headers: { "Content-Type": "application/json" },
+//           body: JSON.stringify({ sensor_id: "1" }),
+//         });
+//         console.log("🔔 Buzzer ON dikirim");
+//       } catch (err) {
+//         console.error("❌ Gagal memanggil API buzzer:", err.message);
+//       }
+//     } else {
+//       console.log("✅ Tidak ada pelanggaran terdeteksi.");
+//     }
 
-    await client.query("COMMIT");
-    return updated;
-  } catch (err) {
-    await client.query("ROLLBACK");
-    console.error("❌ Error updateParking:", err.message);
-    throw err;
-  } finally {
-    client.release();
-  }
-};
+//     await client.query("COMMIT");
+//     return updated;
+//   } catch (err) {
+//     await client.query("ROLLBACK");
+//     console.error("❌ Error updateParking:", err.message);
+//     throw err;
+//   } finally {
+//     client.release();
+//   }
+// };
 
 export const getParkingStats = async () => {
   const result = await pool.query(`
@@ -137,158 +137,159 @@ export const getParkingStats = async () => {
 };
 
 
-// export const updateParking = async ({ nomor, userid }) => {
-//   const client = await pool.connect();
+export const updateParking = async ({ nomor, userid }) => {
+  const client = await pool.connect();
 
-//   try {
-//     await client.query("BEGIN");
-//     console.log("🚗 Update slot via BLE+Sensor:", nomor, "oleh user:", userid);
+  try {
+    await client.query("BEGIN");
+    console.log(`🚗 UpdateParking(Model) slot=${nomor} userid=${userid}`);
 
-//     // ======================================================
-//     // 1️⃣ Panggil API SENSOR untuk cek apakah ada mobil
-//     // ======================================================
-//     const sensorUrl = process.env.URL_SENSOR; // contoh: http://localhost:8000/check
-//     const sensorResp = await fetch(sensorUrl, {
-//       method: "POST",
-//       headers: { "Content-Type": "application/json" },
-//       body: JSON.stringify({ slot_id: nomor })
-//     }).then(r => r.json()).catch(() => null);
+    // =========================================================
+    // 1️⃣ Panggil SENSOR untuk cek kondisi real
+    // =========================================================
+    const sensorUrl = process.env.URL_SENSOR;
 
-//     if (!sensorResp) throw new Error("Sensor tidak memberikan respons");
+    const sensorText = await fetch(sensorUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ slot_id: nomor })
+    })
+      .then(r => r.text())
+      .catch(() => null);
 
-//     const mobilAda = sensorResp.hasil === true;
+    if (!sensorText) throw new Error("Sensor tidak memberikan respons");
 
-//     console.log(`📡 Sensor slot ${nomor}: mobilAda =`, mobilAda);
+    const clean = sensorText.trim().toLowerCase();
+    const mobilAda = clean !== "available"; // "available" = kosong
 
-//     // ======================================================
-//     // 2️⃣ Jika sensor bilang slot KOSONG → override jadi available
-//     // ======================================================
-//     const finalStatus = mobilAda ? "occupied" : "available";
-//     const finalUserId = mobilAda ? userid : null;
+    console.log(`📡 Sensor slot ${nomor}: raw="${clean}", mobilAda = ${mobilAda}`);
 
-//     if (!mobilAda) {
-//       console.log(`📭 Sensor mendeteksi kosong → slot ${nomor} diset available, userid=NULL`);
-//     }
+    // =========================================================
+    // 2️⃣ Tentukan status final berdasarkan sensor
+    // =========================================================
+    const finalStatus = mobilAda ? "occupied" : "available";
+    const finalUserId = mobilAda ? userid : null;
 
-//     // ======================================================
-//     // 3️⃣ Ambil data user (jika userId ada)
-//     // ======================================================
-//     let userRow = null;
-//     if (finalUserId) {
-//       const userRes = await client.query(
-//         `SELECT userid, nama, roles FROM "User" WHERE userid=$1`,
-//         [finalUserId]
-//       );
-//       if (userRes.rows.length === 0) throw new Error("User tidak ditemukan");
-//       userRow = userRes.rows[0];
-//     }
+    if (!mobilAda) {
+      console.log(`📭 Sensor bilang kosong → user ID dihapus`);
+    }
 
-//     // ======================================================
-//     // 4️⃣ Ambil info slot
-//     // ======================================================
-//     const slotRes = await client.query(
-//       `SELECT nomor, lokasi, "rolesUser"
-//        FROM parking
-//        WHERE nomor = $1`,
-//       [nomor]
-//     );
+    // =========================================================
+    // 3️⃣ Jika userId ada → cek usernya
+    // =========================================================
+    let userRow = null;
+    if (finalUserId) {
+      const userRes = await client.query(
+        `SELECT userid, nama, roles FROM "User" WHERE userid=$1`,
+        [finalUserId]
+      );
 
-//     if (slotRes.rows.length === 0) throw new Error("Slot tidak ditemukan");
+      if (userRes.rows.length === 0) throw new Error("User tidak ditemukan");
 
-//     const slot = slotRes.rows[0];
+      userRow = userRes.rows[0];
+    }
 
-//     // ======================================================
-//     // 5️⃣ Lepaskan slot lama user (jika userId valid)
-//     // ======================================================
-//     if (finalUserId) {
-//       const oldSlotRes = await client.query(
-//         `SELECT nomor
-//          FROM parking
-//          WHERE userid = $1 AND nomor != $2`,
-//         [finalUserId, nomor]
-//       );
+    // =========================================================
+    // 4️⃣ Ambil info slot yang sedang diupdate
+    // =========================================================
+    const slotRes = await client.query(
+      `SELECT nomor, lokasi, "rolesUser"
+       FROM parking
+       WHERE nomor = $1`,
+      [nomor]
+    );
 
-//       if (oldSlotRes.rows.length > 0) {
-//         const oldSlot = oldSlotRes.rows[0].nomor;
-//         console.log(`♻️ Melepaskan slot lama (${oldSlot}) milik user ${finalUserId}`);
+    if (slotRes.rows.length === 0) throw new Error("Slot tidak ditemukan");
 
-//         await client.query(
-//           `UPDATE parking
-//            SET userid = NULL, status = 'available'
-//            WHERE nomor = $1`,
-//           [oldSlot]
-//         );
-//       }
-//     }
+    const slot = slotRes.rows[0];
 
-//     // ======================================================
-//     // 6️⃣ Update slot baru sesuai hasil sensor
-//     // ======================================================
-//     const result = await client.query(
-//       `UPDATE parking
-//        SET userid = $2, status = $3
-//        WHERE nomor = $1
-//        RETURNING *`,
-//       [nomor, finalUserId, finalStatus]
-//     );
+    // =========================================================
+    // 5️⃣ Lepaskan slot lama milik user (jika user valid)
+    // =========================================================
+    if (finalUserId) {
+      const oldSlotRes = await client.query(
+        `SELECT nomor FROM parking WHERE userid = $1 AND nomor != $2`,
+        [finalUserId, nomor]
+      );
 
-//     const updated = result.rows[0];
-//     console.log(`✅ Slot ${nomor} diupdate → status=${finalStatus}, user=${finalUserId}`);
+      if (oldSlotRes.rows.length > 0) {
+        const oldSlot = oldSlotRes.rows[0].nomor;
 
-//     // ======================================================
-//     // 7️⃣ Deteksi pelanggaran (hanya jika mobil benar-benar ada)
-//     // ======================================================
-//     if (
-//       mobilAda &&
-//       finalUserId !== null &&
-//       slot.rolesUser &&
-//       slot.rolesUser.toLowerCase() !== userRow.roles.toLowerCase()
-//     ) {
-//       console.warn(
-//         `⚠ Pelanggaran: Slot ${slot.nomor} khusus ${slot.rolesUser}, `
-//         + `tapi ${userRow.nama} (${userRow.roles}) parkir.`
-//       );
+        console.log(`♻️ Melepaskan slot lama user = ${oldSlot}`);
 
-//       // Catat pelanggaran
-//       await client.query(
-//         `INSERT INTO pelanggaran (userid, nomor, jenis_pelanggaran)
-//          VALUES ($1, $2, $3)`,
-//         [
-//           finalUserId,
-//           nomor,
-//           `Menggunakan slot khusus ${slot.rolesUser}`,
-//         ]
-//       );
+        await client.query(
+          `UPDATE parking
+           SET userid = NULL, status = 'available'
+           WHERE nomor = $1`,
+          [oldSlot]
+        );
+      }
+    }
 
-//       // Aktifkan buzzer
-//       const buzzerUrl = process.env.URL_BUZZER;
-//       try {
-//         await fetch(buzzerUrl, {
-//           method: "POST",
-//           headers: { "Content-Type": "application/json" },
-//           body: JSON.stringify({ sensor_id: "1" }),
-//         });
-//         console.log("🔔 Buzzer ON dikirim");
-//       } catch (err) {
-//         console.error("❌ Gagal memanggil buzzer:", err.message);
-//       }
-//     }
+    // =========================================================
+    // 6️⃣ Update slot ini sesuai hasil SENSOR
+    // =========================================================
+    const result = await client.query(
+      `UPDATE parking
+       SET userid = $2, status = $3
+       WHERE nomor = $1
+       RETURNING *`,
+      [nomor, finalUserId, finalStatus]
+    );
 
-//     await client.query("COMMIT");
+    const updated = result.rows[0];
+    console.log(`✅ Updated slot ${nomor}: status="${finalStatus}", user=${finalUserId}`);
 
-//     return {
-//       ...updated,
-//       validatedBySensor: true,
-//       mobilAda,
-//       finalStatus,
-//       finalUserId
-//     };
+    // =========================================================
+    // 7️⃣ Deteksi pelanggaran role (jika mobil ada)
+    // =========================================================
+    if (
+      mobilAda &&
+      finalUserId &&
+      slot.rolesUser &&
+      slot.rolesUser.toLowerCase() !== userRow.roles.toLowerCase()
+    ) {
+      console.warn(
+        `⚠ Pelanggaran: Slot ${slot.nomor} khusus ${slot.rolesUser}, ` +
+        `tapi user ${userRow.nama} (${userRow.roles}) parkir.`
+      );
 
-//   } catch (err) {
-//     await client.query("ROLLBACK");
-//     console.error("❌ Error updateParking:", err.message);
-//     throw err;
-//   } finally {
-//     client.release();
-//   }
-// };
+      // Catat pelanggarannya
+      await client.query(
+        `INSERT INTO pelanggaran (userid, nomor, jenis_pelanggaran)
+         VALUES ($1, $2, $3)`,
+        [finalUserId, nomor, `Menggunakan slot khusus ${slot.rolesUser}`]
+      );
+
+      // Panggil buzzer
+      const buzzerUrl = process.env.URL_BUZZER;
+      try {
+        await fetch(buzzerUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sensor_id: nomor })
+        });
+
+        console.log("🔔 Buzzer ON");
+      } catch (e) {
+        console.error("❌ Gagal mengaktifkan buzzer:", e.message);
+      }
+    }
+
+    await client.query("COMMIT");
+
+    return {
+      ...updated,
+      validatedBySensor: true,
+      mobilAda,
+      finalStatus,
+      finalUserId
+    };
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("❌ Error updateParking MODEL:", err.message);
+    throw err;
+  } finally {
+    client.release();
+  }
+};
