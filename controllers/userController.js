@@ -1,5 +1,6 @@
 import * as UserModel from "../models/userModel.js";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
 
 export const getUsers = async (req, res) => {
   try {
@@ -29,14 +30,20 @@ export const addUser = async (req, res) => {
   try {
     const { nama, license, email, roles, password } = req.body;
 
-    // 🔥 Cek apakah email sudah dipakai
     const existing = await UserModel.getUserByMail(email);
     if (existing) {
       return res.status(409).json({ message: "Email sudah digunakan." });
     }
 
-    // 🔥 Lanjutkan create user
-    const user = await UserModel.createUser({ nama, license, email, roles, password });
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await UserModel.createUser({
+      nama,
+      license,
+      email,
+      roles,
+      password: hashedPassword
+    });
 
     res.status(201).json({
       message: "User berhasil dibuat",
@@ -47,6 +54,7 @@ export const addUser = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
 
 export const removeUser = async (req, res) => {
   const userId = parseInt(req.params.id);
@@ -71,16 +79,15 @@ export const login = async (req, res) => {
     }
 
     const user = await UserModel.getUserByMail(email);
-
     if (!user) {
       return res.status(401).json({ message: "Email atau password salah." });
     }
 
-    if (password !== user.password) {
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
       return res.status(401).json({ message: "Email atau password salah." });
     }
 
-    // ✅ 1. Buat token JWT
     const payload = {
       userID: user.userid,
       nama: user.nama,
@@ -89,13 +96,12 @@ export const login = async (req, res) => {
     };
 
     const token = jwt.sign(payload, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRES_IN || "7d" // bisa 1h, 7d, dsb
+      expiresIn: process.env.JWT_EXPIRES_IN || "7d"
     });
 
-    // ✅ 2. Kirim token + data user ke client
     res.status(200).json({
       message: "Login successful!",
-      token,   // <<=== TOKEN dikirim di sini
+      token,
       user: {
         userid: user.userid,
         nama: user.nama,
@@ -115,10 +121,12 @@ export const updatepassword = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const update = await UserModel.updatepassword(email, password);
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const update = await UserModel.updatepassword(email, hashedPassword);
 
     res.status(200).json(update);
   } catch (err) {
     res.status(500).json(err);
   }
-}
+};
